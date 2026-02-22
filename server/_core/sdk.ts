@@ -255,12 +255,14 @@ class SDKServer {
     if (!user) {
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+        // Create a temporary national ID based on openId for OAuth users
+        const tempNationalId = `oauth_${userInfo.openId.substring(0, 15)}`;
         await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
+          nationalId: tempNationalId,
+          password: "oauth_user",
+          name: userInfo.name || "OAuth User",
+          email: userInfo.email ?? undefined,
+          role: "student",
         });
         user = await db.getUserByOpenId(userInfo.openId);
       } catch (error) {
@@ -273,12 +275,15 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt,
-    });
+    // Update last signed in time
+    if (user && typeof user === 'object' && 'id' in user) {
+      const userId = (user as any).id;
+      if (typeof userId === 'number') {
+        await db.updateUser(userId, { updatedAt: new Date() });
+      }
+    }
 
-    return user;
+    return user as any;
   }
 }
 

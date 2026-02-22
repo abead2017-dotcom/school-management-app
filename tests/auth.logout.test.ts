@@ -15,14 +15,14 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
   
   const user: AuthenticatedUser = {
     id: 1,
-    openId: "sample-user",
+    nationalId: "123456789",
+    password: "hashed_password",
     email: "sample@example.com",
     name: "Sample User",
-    loginMethod: "manus",
-    role: "user",
+    phone: "0501234567",
+    role: "admin",
     createdAt: new Date(),
     updatedAt: new Date(),
-    lastSignedIn: new Date(),
   };
   
   const ctx: TrpcContext = {

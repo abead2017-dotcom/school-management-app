@@ -1,6 +1,6 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
 import type { Express, Request, Response } from "express";
-import { getUserByOpenId, upsertUser } from "../db";
+import { getUserByNationalId, upsertUser } from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
@@ -21,43 +21,38 @@ async function syncUser(userInfo: {
   }
 
   const lastSignedIn = new Date();
+  // Create a temporary national ID for OAuth users
+  const tempNationalId = `oauth_${userInfo.openId?.substring(0, 15) || "unknown"}`;
   await upsertUser({
-    openId: userInfo.openId,
-    name: userInfo.name || null,
-    email: userInfo.email ?? null,
-    loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-    lastSignedIn,
+    nationalId: tempNationalId,
+    password: "oauth_user",
+    name: userInfo.name || "OAuth User",
+    email: userInfo.email ?? undefined,
+    role: "student",
   });
-  const saved = await getUserByOpenId(userInfo.openId);
+  const saved = await getUserByNationalId(tempNationalId);
   return (
     saved ?? {
-      openId: userInfo.openId,
+      nationalId: tempNationalId,
       name: userInfo.name,
       email: userInfo.email,
-      loginMethod: userInfo.loginMethod ?? null,
-      lastSignedIn,
+      role: "student",
     }
   );
 }
 
 function buildUserResponse(
-  user:
-    | Awaited<ReturnType<typeof getUserByOpenId>>
-    | {
-        openId: string;
-        name?: string | null;
-        email?: string | null;
-        loginMethod?: string | null;
-        lastSignedIn?: Date | null;
-      },
+  user: any
 ) {
   return {
-    id: (user as any)?.id ?? null,
-    openId: user?.openId ?? null,
+    id: user?.id ?? null,
+    nationalId: user?.nationalId ?? null,
     name: user?.name ?? null,
     email: user?.email ?? null,
-    loginMethod: user?.loginMethod ?? null,
-    lastSignedIn: (user?.lastSignedIn ?? new Date()).toISOString(),
+    phone: user?.phone ?? null,
+    role: user?.role ?? null,
+    createdAt: (user?.createdAt ?? new Date()).toISOString(),
+    updatedAt: (user?.updatedAt ?? new Date()).toISOString(),
   };
 }
 
@@ -138,7 +133,7 @@ export function registerOAuthRoutes(app: Express) {
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
       const user = await sdk.authenticateRequest(req);
-      res.json({ user: buildUserResponse(user) });
+      res.json({ user: buildUserResponse(user ?? {}) });
     } catch (error) {
       console.error("[Auth] /api/auth/me failed:", error);
       res.status(401).json({ error: "Not authenticated", user: null });
@@ -165,7 +160,7 @@ export function registerOAuthRoutes(app: Express) {
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: ONE_YEAR_MS });
 
-      res.json({ success: true, user: buildUserResponse(user) });
+      res.json({ success: true, user: buildUserResponse(user ?? {}) });
     } catch (error) {
       console.error("[Auth] /api/auth/session failed:", error);
       res.status(401).json({ error: "Invalid token" });
