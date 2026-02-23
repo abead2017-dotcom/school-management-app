@@ -76,6 +76,47 @@ export const appRouter = router({
         }
       }),
 
+    // Sign up - Public user registration
+    signup: publicProcedure
+      .input(z.object({
+        nationalId: z.string().min(10, "الرقم الوطني يجب أن يكون 10 أرقام على الأقل"),
+        password: z.string().min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل"),
+        name: z.string().min(3, "الاسم يجب أن يكون 3 أحرف على الأقل"),
+        email: z.string().email("البريد الإلكتروني غير صحيح").optional(),
+        phone: z.string().optional(),
+        role: z.enum(["admin", "teacher", "student", "parent"]).default("student"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // Check if user already exists
+          const existing = await db.getUserByNationalId(input.nationalId);
+          if (existing) {
+            throw new Error("هذا الرقم الوطني مسجل بالفعل");
+          }
+
+          // Hash password
+          const hashedPassword = await hash(input.password, 10);
+
+          // Create user
+          const userId = await db.createUser({
+            nationalId: input.nationalId,
+            password: hashedPassword,
+            name: input.name,
+            email: input.email,
+            phone: input.phone,
+            role: input.role,
+          });
+
+          return {
+            success: true,
+            userId,
+            message: "تم إنشاء الحساب بنجاح",
+          };
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : "فشل إنشاء الحساب");
+        }
+      }),
+
     // Register new user (Admin only)
     register: protectedProcedure
       .input(z.object({

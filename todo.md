@@ -90,3 +90,13 @@
 - [ ] Prepare for production deployment
 - [ ] Final testing and bug fixes
 - [ ] Create checkpoint for deployment
+
+## Phase 2: Sign Up Feature (New User Registration)
+- [x] Create sign up screen UI with form fields
+- [x] Add form validation for national ID, password, and email
+- [x] Implement sign up API endpoint
+- [x] Add duplicate national ID check
+- [x] Implement password strength validation
+- [x] Create success/error messages
+- [x] Add link from login screen to sign up screen
+- [x] Test sign up flow end-to-end

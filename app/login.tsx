@@ -115,6 +115,14 @@ export default function LoginScreen() {
                 <Text className="text-white font-semibold text-base">تسجيل الدخول</Text>
               )}
             </TouchableOpacity>
+
+            {/* Sign Up Link */}
+            <View className="flex-row items-center justify-center gap-2 mt-4">
+              <Text className="text-muted">ليس لديك حساب؟</Text>
+              <TouchableOpacity onPress={() => router.replace("/signup" as RelativePathString)}>
+                <Text className="text-primary font-semibold">إنشاء حساب جديد</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Footer */}
