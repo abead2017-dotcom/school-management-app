@@ -42,7 +42,9 @@ export default function SignUpScreen() {
       }, 2000);
     },
     onError: (error: any) => {
-      setErrors({ submit: error.message || "فشل إنشاء الحساب" });
+      const errorMessage = error?.message || error?.data?.message || "فشل إنشاء الحساب";
+      console.error("[SignUp] Error:", error);
+      setErrors({ submit: errorMessage });
       setLoading(false);
     },
   });
@@ -106,6 +108,12 @@ export default function SignUpScreen() {
     setSuccessMessage("");
 
     try {
+      console.log("[SignUp] Submitting form data:", {
+        nationalId: formData.nationalId,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+      });
       await signupMutation.mutateAsync({
         nationalId: formData.nationalId,
         name: formData.name,
@@ -115,6 +123,7 @@ export default function SignUpScreen() {
         role: "student", // Default role for new users
       });
     } catch (err) {
+      console.error("[SignUp] Catch error:", err);
       setLoading(false);
     }
   };
