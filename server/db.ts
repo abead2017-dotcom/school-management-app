@@ -1,5 +1,6 @@
-import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import { eq } from "drizzle-orm";
 import { 
   InsertUser, users, 
   InsertTeacher, teachers,
@@ -13,20 +14,36 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
+let pool: mysql.Pool | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
-  if (!_db) {
+  if (!_db && !pool) {
     const databaseUrl = process.env.DATABASE_URL || ENV.databaseUrl;
     if (databaseUrl) {
       try {
         console.log("[Database] Connecting to:", databaseUrl.substring(0, 30) + "...");
-        _db = drizzle(databaseUrl);
+        // Create mysql2 pool from DSN
+        pool = mysql.createPool({
+          uri: databaseUrl,
+          connectionLimit: 10,
+          enableKeepAlive: true,
+          keepAliveInitialDelay: 0,
+        });
+        
+        // Test connection
+        const connection = await pool.getConnection();
+        await connection.ping();
+        connection.release();
+        
+        // Create drizzle instance from pool
+        _db = drizzle(pool) as any;
         console.log("[Database] Connected successfully");
       } catch (error) {
         console.error("[Database] Failed to connect:", error);
         _db = null;
+        pool = null;
       }
     } else {
       console.warn("[Database] No DATABASE_URL or databaseUrl found in environment");
@@ -61,18 +78,26 @@ export async function getUserById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateUser(id: number, data: Partial<InsertUser>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  await db.update(users).set(data).where(eq(users.id, id));
-}
-
 export async function getAllUsers() {
   const db = await getDb();
   if (!db) return [];
   
-  return db.select().from(users);
+  const result = await db.select().from(users);
+  return result;
+}
+
+export async function updateUser(id: number, updates: Partial<InsertUser>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(users).set(updates).where(eq(users.id, id));
+}
+
+export async function deleteUser(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(users).where(eq(users.id, id));
 }
 
 // ============ TEACHER MANAGEMENT ============
@@ -97,14 +122,15 @@ export async function getAllTeachers() {
   const db = await getDb();
   if (!db) return [];
   
-  return db.select().from(teachers);
+  const result = await db.select().from(teachers);
+  return result;
 }
 
-export async function updateTeacher(id: number, data: Partial<InsertTeacher>) {
+export async function updateTeacher(id: number, updates: Partial<InsertTeacher>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(teachers).set(data).where(eq(teachers.id, id));
+  await db.update(teachers).set(updates).where(eq(teachers.id, id));
 }
 
 export async function deleteTeacher(id: number) {
@@ -132,25 +158,27 @@ export async function getStudentByUserId(userId: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getStudentsByClassId(classId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  return db.select().from(students).where(eq(students.classId, classId));
-}
-
 export async function getAllStudents() {
   const db = await getDb();
   if (!db) return [];
   
-  return db.select().from(students);
+  const result = await db.select().from(students);
+  return result;
 }
 
-export async function updateStudent(id: number, data: Partial<InsertStudent>) {
+export async function getStudentsByClassId(classId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select().from(students).where(eq(students.classId, classId));
+  return result;
+}
+
+export async function updateStudent(id: number, updates: Partial<InsertStudent>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(students).set(data).where(eq(students.id, id));
+  await db.update(students).set(updates).where(eq(students.id, id));
 }
 
 export async function deleteStudent(id: number) {
@@ -170,13 +198,6 @@ export async function createClass(classData: InsertClass) {
   return result[0]?.insertId || 0;
 }
 
-export async function getAllClasses() {
-  const db = await getDb();
-  if (!db) return [];
-  
-  return db.select().from(classes);
-}
-
 export async function getClassById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
@@ -185,11 +206,19 @@ export async function getClassById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateClass(id: number, data: Partial<InsertClass>) {
+export async function getAllClasses() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select().from(classes);
+  return result;
+}
+
+export async function updateClass(id: number, updates: Partial<InsertClass>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(classes).set(data).where(eq(classes.id, id));
+  await db.update(classes).set(updates).where(eq(classes.id, id));
 }
 
 export async function deleteClass(id: number) {
@@ -209,13 +238,6 @@ export async function createSubject(subject: InsertSubject) {
   return result[0]?.insertId || 0;
 }
 
-export async function getAllSubjects() {
-  const db = await getDb();
-  if (!db) return [];
-  
-  return db.select().from(subjects);
-}
-
 export async function getSubjectById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
@@ -224,11 +246,19 @@ export async function getSubjectById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateSubject(id: number, data: Partial<InsertSubject>) {
+export async function getAllSubjects() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db.select().from(subjects);
+  return result;
+}
+
+export async function updateSubject(id: number, updates: Partial<InsertSubject>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(subjects).set(data).where(eq(subjects.id, id));
+  await db.update(subjects).set(updates).where(eq(subjects.id, id));
 }
 
 export async function deleteSubject(id: number) {
@@ -252,23 +282,24 @@ export async function getStudentGrades(studentId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  return db.select().from(grades).where(eq(grades.studentId, studentId));
+  const result = await db.select().from(grades).where(eq(grades.studentId, studentId));
+  return result;
 }
 
-export async function updateGrade(id: number, data: Partial<InsertGrade>) {
+export async function updateGrade(id: number, updates: Partial<InsertGrade>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(grades).set(data).where(eq(grades.id, id));
+  await db.update(grades).set(updates).where(eq(grades.id, id));
 }
 
 // ============ ATTENDANCE MANAGEMENT ============
 
-export async function recordAttendance(attendance_record: InsertAttendance) {
+export async function createAttendance(attendance_data: InsertAttendance) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(attendance).values(attendance_record);
+  const result = await db.insert(attendance).values(attendance_data);
   return result[0]?.insertId || 0;
 }
 
@@ -276,7 +307,20 @@ export async function getStudentAttendance(studentId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  return db.select().from(attendance).where(eq(attendance.studentId, studentId));
+  const result = await db.select().from(attendance).where(eq(attendance.studentId, studentId));
+  return result;
+}
+
+export async function recordAttendance(studentId: number, date: Date, status: "present" | "absent" | "late") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(attendance).values({
+    studentId,
+    date,
+    status,
+  });
+  return result[0]?.insertId || 0;
 }
 
 // ============ FEE MANAGEMENT ============
@@ -293,14 +337,15 @@ export async function getStudentFees(studentId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  return db.select().from(fees).where(eq(fees.studentId, studentId));
+  const result = await db.select().from(fees).where(eq(fees.studentId, studentId));
+  return result;
 }
 
-export async function updateFee(id: number, data: Partial<InsertFee>) {
+export async function updateFee(id: number, updates: Partial<InsertFee>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(fees).set(data).where(eq(fees.id, id));
+  await db.update(fees).set(updates).where(eq(fees.id, id));
 }
 
 // ============ NOTIFICATION MANAGEMENT ============
@@ -317,7 +362,8 @@ export async function getUserNotifications(userId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  return db.select().from(notifications).where(eq(notifications.userId, userId));
+  const result = await db.select().from(notifications).where(eq(notifications.userId, userId));
+  return result;
 }
 
 export async function markNotificationAsRead(id: number) {
@@ -327,40 +373,21 @@ export async function markNotificationAsRead(id: number) {
   await db.update(notifications).set({ read: true }).where(eq(notifications.id, id));
 }
 
-// ============ OAUTH COMPATIBILITY (Legacy functions) ============
 
-/**
- * @deprecated Use getUserByNationalId instead
- * This function is kept for OAuth compatibility
- */
+// ============ OAUTH COMPATIBILITY FUNCTIONS ============
+
 export async function getUserByOpenId(openId: string) {
-  // Since we're using nationalId now, this is a fallback
-  // In a real migration, you'd map openId to nationalId
+  // For OAuth compatibility - not used in national ID based auth
   return undefined;
 }
 
-/**
- * @deprecated Use createUser/updateUser instead
- * This function is kept for OAuth compatibility
- */
-export async function upsertUser(user: InsertUser) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
-
-  try {
-    // For now, just create a user if it doesn't exist
-    // In production, you'd implement proper upsert logic
-    const existing = await getUserByNationalId(user.nationalId || "");
-    if (existing) {
-      await updateUser(existing.id, user);
-    } else {
-      await createUser(user);
-    }
-  } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
-    throw error;
+export async function upsertUser(data: any) {
+  // For OAuth compatibility - use createUser or updateUser instead
+  const existing = await getUserByNationalId(data.nationalId);
+  if (existing) {
+    await updateUser(existing.id, data);
+    return existing.id;
+  } else {
+    return await createUser(data);
   }
 }

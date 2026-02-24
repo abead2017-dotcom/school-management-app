@@ -100,3 +100,6 @@
 - [x] Create success/error messages
 - [x] Add link from login screen to sign up screen
 - [x] Test sign up flow end-to-end
+- [x] Fix database connection issues
+- [x] Run database migrations
+- [x] All 16 unit tests passing

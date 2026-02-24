@@ -640,12 +640,11 @@ export const appRouter = router({
         if (ctx.user?.role !== "teacher") {
           throw new Error("غير مصرح");
         }
-        const attendanceData: any = {
-          studentId: input.studentId,
-          date: new Date(input.date),
-          status: input.status,
-        };
-        const attendanceId = await db.recordAttendance(attendanceData);
+        const attendanceId = await db.recordAttendance(
+          input.studentId,
+          new Date(input.date),
+          input.status as "present" | "absent" | "late"
+        );
         return { success: true, attendanceId, message: "تم تسجيل الحضور بنجاح" };
       }),
   }),
