@@ -1,0 +1,8 @@
+{
+  "query": "\n-- Check if admin user exists\nSELECT * FROM users WHERE nationalId = '12022724439';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Y9H3NuQEaNk9fx.root --database 6R7G7TTYoanGAbMA3voTQG --execute \n-- Check if admin user exists\nSELECT * FROM users WHERE nationalId = '12022724439';\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 3: Unknown column 'nationalid' in 'where clause'"
+  ]
+}

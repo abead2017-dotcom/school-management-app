@@ -1,24 +1,24 @@
-import { useState } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import type { RelativePathString } from "expo-router";
 
 export default function SignUpScreen() {
   const colors = useColors();
   const router = useRouter();
   const [formData, setFormData] = useState({
-    nationalId: "12022724439",
-    name: "عبيد عبد الله محمد عبيد",
-    email: "abead2017@gmail.com ",
-    phone: "0923972623",
-    password: "@Obaid9275",
-    confirmPassword: "@Obaid9275",
+    nationalId: "",
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
   });
-   useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -41,6 +41,9 @@ export default function SignUpScreen() {
         router.replace("/login" as RelativePathString);
       }, 2000);
     },
+    onError: (error: any) => {
+      setErrors({ submit: error.message });
+      setLoading(false);
     },
   });
 
@@ -91,7 +94,7 @@ export default function SignUpScreen() {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 9;
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSignUp = async () => {
@@ -117,7 +120,8 @@ export default function SignUpScreen() {
         password: formData.password,
         role: "student", // Default role for new users
       });
-    } 
+    } catch (error) {
+      console.error("[SignUp] Error:", error);
     }
   };
 
@@ -140,6 +144,13 @@ export default function SignUpScreen() {
             </View>
           ) : null}
 
+          {/* Error Message */}
+          {errors.submit ? (
+            <View className="bg-error/10 border border-error rounded-lg px-4 py-3 mb-4">
+              <Text className="text-error text-sm">{errors.submit}</Text>
+            </View>
+          ) : null}
+
           {/* Form */}
           <View className="gap-4">
             {/* National ID Input */}
@@ -154,12 +165,11 @@ export default function SignUpScreen() {
                 placeholderTextColor={colors.muted}
                 value={formData.nationalId}
                 onChangeText={(text) => setFormData({ ...formData, nationalId: text })}
-                editable={!loading}
                 keyboardType="numeric"
               />
-              {errors.nationalId ? (
+              {errors.nationalId && (
                 <Text className="text-error text-xs mt-1">{errors.nationalId}</Text>
-              ) : null}
+              )}
             </View>
 
             {/* Name Input */}
@@ -170,15 +180,14 @@ export default function SignUpScreen() {
                   "border rounded-lg px-4 py-3 text-foreground bg-surface",
                   errors.name ? "border-error" : "border-border"
                 )}
-                placeholder="أدخل الاسم الكامل"
+                placeholder="أدخل اسمك الكامل"
                 placeholderTextColor={colors.muted}
                 value={formData.name}
                 onChangeText={(text) => setFormData({ ...formData, name: text })}
-                editable={!loading}
               />
-              {errors.name ? (
+              {errors.name && (
                 <Text className="text-error text-xs mt-1">{errors.name}</Text>
-              ) : null}
+              )}
             </View>
 
             {/* Email Input */}
@@ -189,16 +198,15 @@ export default function SignUpScreen() {
                   "border rounded-lg px-4 py-3 text-foreground bg-surface",
                   errors.email ? "border-error" : "border-border"
                 )}
-                placeholder="أدخل البريد الإلكتروني (اختياري)"
+                placeholder="أدخل بريدك الإلكتروني"
                 placeholderTextColor={colors.muted}
                 value={formData.email}
                 onChangeText={(text) => setFormData({ ...formData, email: text })}
-                editable={!loading}
                 keyboardType="email-address"
               />
-              {errors.email ? (
+              {errors.email && (
                 <Text className="text-error text-xs mt-1">{errors.email}</Text>
-              ) : null}
+              )}
             </View>
 
             {/* Phone Input */}
@@ -209,16 +217,15 @@ export default function SignUpScreen() {
                   "border rounded-lg px-4 py-3 text-foreground bg-surface",
                   errors.phone ? "border-error" : "border-border"
                 )}
-                placeholder="أدخل رقم الهاتف (اختياري)"
+                placeholder="أدخل رقم هاتفك"
                 placeholderTextColor={colors.muted}
                 value={formData.phone}
                 onChangeText={(text) => setFormData({ ...formData, phone: text })}
-                editable={!loading}
                 keyboardType="phone-pad"
               />
-              {errors.phone ? (
+              {errors.phone && (
                 <Text className="text-error text-xs mt-1">{errors.phone}</Text>
-              ) : null}
+              )}
             </View>
 
             {/* Password Input */}
@@ -229,16 +236,15 @@ export default function SignUpScreen() {
                   "border rounded-lg px-4 py-3 text-foreground bg-surface",
                   errors.password ? "border-error" : "border-border"
                 )}
-                placeholder="أدخل كلمة المرور (8 أحرف على الأقل)"
+                placeholder="أدخل كلمة المرور"
                 placeholderTextColor={colors.muted}
                 value={formData.password}
                 onChangeText={(text) => setFormData({ ...formData, password: text })}
                 secureTextEntry
-                editable={!loading}
               />
-              {errors.password ? (
+              {errors.password && (
                 <Text className="text-error text-xs mt-1">{errors.password}</Text>
-              ) : null}
+              )}
             </View>
 
             {/* Confirm Password Input */}
@@ -254,50 +260,31 @@ export default function SignUpScreen() {
                 value={formData.confirmPassword}
                 onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
                 secureTextEntry
-                editable={!loading}
               />
-              {errors.confirmPassword ? (
+              {errors.confirmPassword && (
                 <Text className="text-error text-xs mt-1">{errors.confirmPassword}</Text>
-              ) : null}
+              )}
             </View>
-
-            {/* Submit Error */}
-            {errors.submit ? (
-              <View className="bg-error/10 border border-error rounded-lg px-4 py-3">
-                <Text className="text-error text-sm">{errors.submit}</Text>
-              </View>
-            ) : null}
 
             {/* Sign Up Button */}
             <TouchableOpacity
-              className={cn(
-                "rounded-lg px-4 py-3 items-center justify-center mt-2",
-                loading ? "bg-primary/50" : "bg-primary"
-              )}
+              className="bg-primary rounded-lg py-4 mt-4 flex-row items-center justify-center gap-2"
               onPress={handleSignUp}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white font-semibold text-base">إنشاء الحساب</Text>
-              )}
+              {loading && <ActivityIndicator color={colors.background} size="small" />}
+              <Text className="text-background font-semibold text-lg">
+                {loading ? "جاري الإنشاء..." : "إنشاء الحساب"}
+              </Text>
             </TouchableOpacity>
 
             {/* Login Link */}
-            <View className="flex-row items-center justify-center gap-2 mt-4">
-              <Text className="text-muted">هل لديك حساب بالفعل؟</Text>
+            <View className="flex-row items-center justify-center gap-1 mt-4">
+              <Text className="text-muted">هل لديك حساب بالفعل؟ </Text>
               <TouchableOpacity onPress={() => router.replace("/login" as RelativePathString)}>
                 <Text className="text-primary font-semibold">تسجيل الدخول</Text>
               </TouchableOpacity>
             </View>
-          </View>
-
-          {/* Footer */}
-          <View className="mt-8 items-center">
-            <Text className="text-xs text-muted">
-              © 2026 نظام إدارة المدارس - جميع الحقوق محفوظة
-            </Text>
           </View>
         </View>
       </ScrollView>
