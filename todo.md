@@ -114,3 +114,12 @@
 - [ ] Add admin user (12022724439 / Obaid@9275) to database
 - [ ] Test admin login on web dashboard
 - [ ] Create public links for web platform
+
+
+## Phase 4: Bug Fixes & Testing
+- [x] Fix ExpoSecureStore.default.setValueWithKeyAsync error in mobile app
+- [x] Fix login functionality in mobile app
+- [ ] Test login with admin credentials (12022724439 / Obaid@9275)
+- [ ] Test admin dashboard login
+- [ ] Verify token storage and retrieval
+- [ ] Test complete login flow end-to-end

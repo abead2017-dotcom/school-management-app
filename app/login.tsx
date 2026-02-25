@@ -20,7 +20,11 @@ export default function LoginScreen() {
     onSuccess: async (data) => {
       // Save token to secure storage
       if (data.token) {
-        await SecureStore.setItemAsync("auth_token", data.token);
+        try {
+          await SecureStore.setItemAsync("auth_token", data.token);
+        } catch (err) {
+          console.warn("Failed to save token to secure storage:", err);
+        }
       }
       // Navigate to home screen
       router.replace("/(tabs)" as RelativePathString);
