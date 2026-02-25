@@ -11,12 +11,12 @@ export default function SignUpScreen() {
   const colors = useColors();
   const router = useRouter();
   const [formData, setFormData] = useState({
-    nationalId: "",
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
+    nationalId: "12022724439",
+    name: "عبيد عبد الله محمد عبيد",
+    email: "abead2017@gmail.com ",
+    phone: "0923972623",
+    password: "@Obaid9275",
+    confirmPassword: "@Obaid9275",
   });
    useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
