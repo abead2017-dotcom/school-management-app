@@ -18,7 +18,7 @@ export default function SignUpScreen() {
     password: "",
     confirmPassword: "",
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+   useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
