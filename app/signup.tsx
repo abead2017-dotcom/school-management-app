@@ -41,11 +41,6 @@ export default function SignUpScreen() {
         router.replace("/login" as RelativePathString);
       }, 2000);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.message || error?.data?.message || "فشل إنشاء الحساب";
-      console.error("[SignUp] Error:", error);
-      setErrors({ submit: errorMessage });
-      setLoading(false);
     },
   });
 
@@ -96,7 +91,7 @@ export default function SignUpScreen() {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).length === 9;
   };
 
   const handleSignUp = async () => {
@@ -122,9 +117,7 @@ export default function SignUpScreen() {
         password: formData.password,
         role: "student", // Default role for new users
       });
-    } catch (err) {
-      console.error("[SignUp] Catch error:", err);
-      setLoading(false);
+    } 
     }
   };
 
